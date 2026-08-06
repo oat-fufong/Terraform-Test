@@ -5,5 +5,5 @@ output "service_url" {
 
 output "api_statuses" {
   description = "Which APIs were enabled"
-  value       = { for s in google_project_service.apis : s.service => s.state }
+  value       = { for k, v in google_project_service.apis : k => "ENABLED" }
 }
