@@ -8,11 +8,9 @@ terraform {
 }
 
 provider "google" {
-  project = var.gcp_project != "" ? var.gcp_project : data.google_client_config.current.project
+  project = var.gcp_project
   region  = var.region
 }
-
-data "google_client_config" "current" {}
 
 # Enable required GCP APIs
 resource "google_project_service" "apis" {
