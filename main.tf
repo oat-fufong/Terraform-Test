@@ -19,6 +19,28 @@ resource "google_compute_network" "vpc_network" {
   name = "terraform-network"
 }
 
+# Terraform state bucket
+resource "google_storage_bucket" "terraform_state" {
+  name                        = "${var.gcp_project}-terraform-state"
+  location                    = var.region
+  storage_class               = "STANDARD"
+  uniform_bucket_level_access = true
+
+  versioning {
+    enabled = true
+  }
+
+  lifecycle_rule {
+    condition {
+      age                = 30
+      num_newer_versions = 10
+    }
+    action {
+      type = "Delete"
+    }
+  }
+}
+
 resource "google_compute_instance" "vm_instance" {
   name         = "terraform-instance"
   machine_type = "${var.machine_type}"
@@ -43,7 +65,7 @@ resource "google_compute_instance" "vm_instance" {
 
 # Enable required GCP APIs
 resource "google_project_service" "apis" {
-  for_each           = toset(["compute.googleapis.com", "oslogin.googleapis.com"])
+  for_each           = toset(["compute.googleapis.com", "oslogin.googleapis.com", "storage.googleapis.com"])
   service            = each.value
   disable_on_destroy = false
 }
