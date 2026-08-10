@@ -37,6 +37,7 @@ resource "google_compute_instance" "vm_instance" {
 
   metadata = {
     enable-oslogin = "TRUE"
+    startup-script = file("install_docker.sh")
   }
 }
 
