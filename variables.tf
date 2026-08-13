@@ -25,7 +25,7 @@ variable "app_name" {
 variable "machine_type" {
   description = "Machine type for the test VM"
   type        = string
-  default     = "e2-micro"
+  default     = "e2-medium"
 }
 
 variable "terraform_deployer_sa" {
@@ -49,28 +49,7 @@ variable "domain_name" {
 variable "backend_port" {
   description = "Port the app container listens on, that the load balancer forwards to"
   type        = number
-  default     = 8080
-}
-
-# These two aren't consumed by any resource anymore - Terraform doesn't
-# create the brand. Kept as the values to hand the project owner when asking
-# them to create it (Console: APIs & Services > OAuth consent screen).
-variable "iap_support_email" {
-  description = "Support email to request for the IAP/OAuth consent screen, when asking the project owner to create the brand"
-  type        = string
-  default     = "natakorn.s@fufonglabs.com"
-}
-
-variable "iap_application_title" {
-  description = "Application name to request for the IAP/OAuth consent screen, when asking the project owner to create the brand"
-  type        = string
-  default     = "Terraform Test"
-}
-
-variable "iap_brand_name" {
-  description = "Resource name of the IAP brand once the project owner creates it, format projects/{project_number}/brands/{brand_id}. Find it with: gcloud alpha iap oauth-brands list --project=<project>. Leave blank until then - google_iap_client will fail to create without it."
-  type        = string
-  default     = ""
+  default     = 4321
 }
 
 variable "iap_allowed_members" {
