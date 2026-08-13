@@ -16,11 +16,23 @@ resource "google_compute_backend_service" "app_backend" {
     group = google_compute_instance_group.app_ig.self_link
   }
 
-  # iap {
-  #   enabled              = true
-  #   oauth2_client_id     = google_iap_client.app_client.client_id
-  #   oauth2_client_secret = google_iap_client.app_client.secret
-  # }
+  # As of the IAP OAuth Admin API deprecation, no brand/client resource is
+  # needed - omitting oauth2_client_id/secret makes IAP use a Google-managed
+  # OAuth client automatically. https://docs.cloud.google.com/iap/docs/deprecations/migrate-oauth-client
+  iap {
+    enabled = true
+  }
+}
+
+# Least-privilege: grants access to just this one backend service, not the
+# whole project. Add more entries to var.iap_allowed_members for teammates.
+resource "google_iap_web_backend_service_iam_member" "app_access" {
+  for_each = toset(var.iap_allowed_members)
+
+  project             = var.gcp_project
+  web_backend_service = google_compute_backend_service.app_backend.name
+  role                = "roles/iap.httpsResourceAccessor"
+  member              = each.value
 }
 
 resource "google_compute_url_map" "app_urlmap" {
