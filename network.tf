@@ -16,6 +16,20 @@ resource "google_compute_firewall" "allow_iap_ssh" {
 
 }
 
+# Lets you reach Grafana (and other debug-only ports) via IAP tunnel,
+# same pattern as SSH - not exposed through the load balancer at all.
+resource "google_compute_firewall" "allow_iap_debug_ports" {
+  name    = "allow-debug-ports-from-iap"
+  network = google_compute_network.vpc_network.name
+
+  source_ranges = [var.iap_forwarding_cidr]
+
+  allow {
+    protocol = "tcp"
+    ports    = ["3001"] # grafana
+  }
+}
+
 # Only Google's LB health-check ranges may reach the backend port.
 resource "google_compute_firewall" "allow_lb_health_check" {
   name    = "allow-lb-health-check"
