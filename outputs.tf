@@ -4,8 +4,28 @@ output "vm_name" {
 }
 
 output "vm_internal_ip" {
-  description = "Internal IP of the test VM (no external IP is assigned)"
+  description = "Internal IP of the test VM"
   value       = google_compute_instance.vm_instance.network_interface[0].network_ip
+}
+
+output "lb_ip_address" {
+  description = "Load balancer's reserved external IP - point var.domain_name's DNS A record here once a real domain is available"
+  value       = google_compute_global_address.app_ip.address
+}
+
+output "lb_http_test_url" {
+  description = "Test the LB chain now, no domain/cert needed (temporary, unauthenticated)"
+  value       = "http://${google_compute_global_address.app_ip.address}/"
+}
+
+output "lb_https_test_url" {
+  description = "Real HTTPS test URL - sslip.io fallback until var.domain_name is a real domain. Cert takes a few minutes to move from PROVISIONING to ACTIVE after apply."
+  value       = "https://${local.lb_domain}/"
+}
+
+output "cert_status_command" {
+  description = "Check the managed cert's status (name is auto-generated, changes whenever the domain changes)"
+  value       = "gcloud compute ssl-certificates describe ${local.cert_name} --global --project=${var.gcp_project} --format='get(managed.status,managed.domainStatus)'"
 }
 
 output "ssh_command" {
