@@ -1,0 +1,3 @@
+gcloud services enable cloudresourcemanager.googleapis.com \
+  --project=c0001-uat \
+  --impersonate-service-account=c0001-uat-terraform-deployer@c0001-uat.iam.gserviceaccount.com
