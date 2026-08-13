@@ -67,11 +67,8 @@ resource "google_compute_target_https_proxy" "app_https_proxy" {
 resource "google_compute_global_address" "app_ip" {
   name = "app-lb-ip"
 
-  # DNS ends up pointed at this IP once a real domain is in use - guard
-  # against a plain `terraform destroy` (or any apply that would replace it)
-  # silently handing back a different IP. To actually remove this resource
-  # later, delete this lifecycle block first, then destroy - two deliberate
-  # steps instead of one accidental one.
+  # DNS ends up pointed at this IP once a real domain is in use - guard against a plain `terraform destroy`. 
+  # To actually remove this resource delete this lifecycle block first, then destroy
   lifecycle {
     prevent_destroy = true
   }
