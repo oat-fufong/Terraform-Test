@@ -40,6 +40,6 @@ resource "google_compute_firewall" "allow_lb_health_check" {
 
   allow {
     protocol = "tcp"
-    ports    = [tostring(var.backend_port)]
+    ports    = [tostring(var.backend_port), "3001"]
   }
 }
