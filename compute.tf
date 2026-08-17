@@ -36,4 +36,8 @@ resource "google_compute_instance_group" "app_ig" {
     name = "http"
     port = var.backend_port
   }
+  named_port {
+    name = "grafana"
+    port = 3001
+  }
 }
