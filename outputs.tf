@@ -14,13 +14,18 @@ output "lb_ip_address" {
 }
 
 output "lb_http_test_url" {
-  description = "Test the LB chain now, no domain/cert needed (temporary, unauthenticated)"
+  description = "Test the LB chain, no domain/cert needed - same IAP protection as the HTTPS URL, just unencrypted"
   value       = "http://${google_compute_global_address.app_ip.address}/"
 }
 
 output "lb_https_test_url" {
-  description = "Real HTTPS test URL - sslip.io fallback until var.domain_name is a real domain. Cert takes a few minutes to move from PROVISIONING to ACTIVE after apply."
+  description = "Main app URL, IAP-protected. sslip.io fallback until var.domain_name is a real domain. Cert takes a few minutes to move from PROVISIONING to ACTIVE after apply."
   value       = "https://${local.lb_domain}/"
+}
+
+output "grafana_url" {
+  description = "Grafana, IAP-protected. Cert covers this domain too once ACTIVE."
+  value       = "https://${local.grafana_domain}/"
 }
 
 output "cert_status_command" {
