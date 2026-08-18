@@ -25,9 +25,9 @@ resource "google_compute_backend_service" "app_backend" {
 }
 
 # Least-privilege: grants access to just this one backend service, not the
-# whole project. Add more entries to var.iap_allowed_members for teammates.
+# whole project. Add more entries to var.app_allowed_members for teammates.
 resource "google_iap_web_backend_service_iam_member" "app_access" {
-  for_each = toset(var.iap_allowed_members)
+  for_each = toset(var.app_allowed_members)
 
   project             = var.gcp_project
   web_backend_service = google_compute_backend_service.app_backend.name
@@ -63,10 +63,10 @@ resource "google_compute_backend_service" "grafana_backend" {
 }
 
 # Separate IAP grant, scoped to just the Grafana backend - not implied by
-# app_access above. Same members list for now; can diverge later if Grafana
-# access should be narrower than the main app's.
+# app_access above. Independent list (var.grafana_allowed_members) - can be
+# a subset of who's allowed on the frontend, or a different set entirely.
 resource "google_iap_web_backend_service_iam_member" "grafana_access" {
-  for_each = toset(var.iap_allowed_members)
+  for_each = toset(var.grafana_allowed_members)
 
   project             = var.gcp_project
   web_backend_service = google_compute_backend_service.grafana_backend.name
