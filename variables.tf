@@ -52,8 +52,14 @@ variable "backend_port" {
   default     = 4321
 }
 
-variable "iap_allowed_members" {
-  description = "Identities granted roles/iap.httpsResourceAccessor on the backend service. Format: \"user:email\" or \"group:email\"."
+variable "app_allowed_members" {
+  description = "Identities granted roles/iap.httpsResourceAccessor on the frontend backend service. Format: \"user:email\" or \"group:email\"."
+  type        = list(string)
+  default     = ["user:natakorn.s@fufonglabs.com"]
+}
+
+variable "grafana_allowed_members" {
+  description = "Identities granted roles/iap.httpsResourceAccessor on the Grafana backend service - independent from app_allowed_members, can be a narrower subset. Format: \"user:email\" or \"group:email\". Note: only accounts within your Google Workspace org can authenticate at all right now (the Google-managed OAuth client IAP defaults to is internal-only) - external accounts like personal Gmail need a custom OAuth client first, see conversation/devlog."
   type        = list(string)
   default     = ["user:natakorn.s@fufonglabs.com"]
 }
