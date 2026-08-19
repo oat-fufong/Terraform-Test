@@ -1,7 +1,7 @@
 variable "gcp_project" {
   description = "GCP Project ID"
   type        = string
-  default     = "c0001-uat"
+  # No default - required
 }
 
 variable "region" {
@@ -31,17 +31,17 @@ variable "machine_type" {
 variable "terraform_deployer_sa" {
   description = "Service account Terraform impersonates to make API calls"
   type        = string
-  default     = "c0001-uat-terraform-deployer@c0001-uat.iam.gserviceaccount.com"
+  # No default - required
 }
 
 variable "vm_runtime_sa" {
   description = "Service account attached to the VM at runtime (least-privilege, separate from the deployer identity)"
   type        = string
-  default     = "c0001-uat-vm-runtime@c0001-uat.iam.gserviceaccount.com"
+  # No default - required,
 }
 
 variable "domain_name" {
-  description = "Domain pointed at the load balancer's IP for the managed SSL cert. PLACEHOLDER until a real domain is available - the cert will sit in PROVISIONING until this is a real, DNS-verifiable domain."
+  description = "Domain pointed at the load balancer's IP for the managed SSL cert. If left as \"changeme.example.com\", falls back to a sslip.io-derived domain (see local.lb_domain in loadbalancer.tf) - set to a real, DNS-verified domain in terraform.tfvars once available."
   type        = string
   default     = "changeme.example.com"
 }
@@ -53,15 +53,13 @@ variable "backend_port" {
 }
 
 variable "app_allowed_members" {
-  description = "Identities granted roles/iap.httpsResourceAccessor on the frontend backend service. Format: \"user:email\" or \"group:email\"."
+  description = "Identities granted roles/iap.httpsResourceAccessor on the frontend backend service. Format: \"user:email\" or \"group:email\". No default - who gets access is deliberately explicit per deployment, set in terraform.tfvars."
   type        = list(string)
-  default     = ["user:natakorn.s@fufonglabs.com"]
 }
 
 variable "grafana_allowed_members" {
-  description = "Identities granted roles/iap.httpsResourceAccessor on the Grafana backend service - independent from app_allowed_members, can be a narrower subset. Format: \"user:email\" or \"group:email\". Note: only accounts within your Google Workspace org can authenticate at all right now (the Google-managed OAuth client IAP defaults to is internal-only) - external accounts like personal Gmail need a custom OAuth client first, see conversation/devlog."
+  description = "Identities granted roles/iap.httpsResourceAccessor on the Grafana backend service - independent from app_allowed_members, can be a narrower subset. Format: \"user:email\" or \"group:email\". No default - set in terraform.tfvars. Note: only accounts within your Google Workspace org can authenticate at all right now (the Google-managed OAuth client IAP defaults to is internal-only) - external accounts like personal Gmail need a custom OAuth client first, see conversation/devlog."
   type        = list(string)
-  default     = ["user:natakorn.s@fufonglabs.com"]
 }
 
 variable "iap_forwarding_cidr" {
