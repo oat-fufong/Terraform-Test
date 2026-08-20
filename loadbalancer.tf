@@ -16,9 +16,6 @@ resource "google_compute_backend_service" "app_backend" {
     group = google_compute_instance_group.app_ig.self_link
   }
 
-  # As of the IAP OAuth Admin API deprecation, no brand/client resource is
-  # needed - omitting oauth2_client_id/secret makes IAP use a Google-managed
-  # OAuth client automatically. https://docs.cloud.google.com/iap/docs/deprecations/migrate-oauth-client
   iap {
     enabled = true
   }
@@ -62,9 +59,8 @@ resource "google_compute_backend_service" "grafana_backend" {
   }
 }
 
-# Separate IAP grant, scoped to just the Grafana backend - not implied by
-# app_access above. Independent list (var.grafana_allowed_members) - can be
-# a subset of who's allowed on the frontend, or a different set entirely.
+# Separate IAP grant, scoped to just the Grafana backend
+# Independent list (var.grafana_allowed_members) 
 resource "google_iap_web_backend_service_iam_member" "grafana_access" {
   for_each = toset(var.grafana_allowed_members)
 
@@ -101,11 +97,9 @@ locals {
   lb_domain = var.domain_name == "changeme.example.com" ? "${replace(google_compute_global_address.app_ip.address, ".", "-")}.sslip.io" : var.domain_name
 
   # google_compute_managed_ssl_certificate doesn't support name_prefix, so
-  # derive a stable-but-unique name from the domain itself (via a builtin
-  # hash function, no extra provider needed). Only changes when lb_domain
-  # changes, so combined with create_before_destroy below, Terraform stands
-  # up the new cert and re-points the proxy at it before tearing down the
-  # old one - avoiding "resource in use" on replacement.
+  # derive a stable-but-unique name from the domain.
+  # Purpose is to trigger a safe create-new-then-destroy on Terraform when
+  # "lb_domain" changes, to safely replace SSL Cert.
   cert_name = "app-ssl-cert-${substr(md5(local.lb_domain), 0, 8)}"
 }
 
@@ -146,8 +140,6 @@ resource "google_compute_global_forwarding_rule" "app_https" {
 
 # Added to test the chain (url map -> backend -> health check -> instance
 # group) over plain HTTP against the raw IP, with no domain/cert needed.
-# Shares the same url_map and IP as the HTTPS path above, and therefore the
-# same IAP protection - not an open door, just unencrypted.
 resource "google_compute_target_http_proxy" "app_http_proxy" {
   name    = "app-http-proxy"
   url_map = google_compute_url_map.app_urlmap.id
