@@ -24,8 +24,8 @@ output "lb_https_test_url" {
 }
 
 output "grafana_url" {
-  description = "Grafana, IAP-protected. Cert covers this domain too once ACTIVE."
-  value       = "https://${local.grafana_domain}/"
+  description = "Grafana, IAP-protected. Same domain and cert as the main app, routed by path - requires Grafana's own GF_SERVER_ROOT_URL/GF_SERVER_SERVE_FROM_SUB_PATH config to actually work correctly."
+  value       = "https://${local.lb_domain}/grafana/"
 }
 
 output "cert_status_command" {
