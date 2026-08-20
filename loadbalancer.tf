@@ -138,11 +138,21 @@ resource "google_compute_global_forwarding_rule" "app_https" {
   ip_address = google_compute_global_address.app_ip.address
 }
 
+resource "google_compute_url_map" "https_redirect" {
+  name = "app-https-redirect"
+
+  default_url_redirect {
+    https_redirect = true
+    host_redirect  = local.lb_domain  
+    strip_query    = false
+  }
+}
+
 # Added to test the chain (url map -> backend -> health check -> instance
 # group) over plain HTTP against the raw IP, with no domain/cert needed.
 resource "google_compute_target_http_proxy" "app_http_proxy" {
   name    = "app-http-proxy"
-  url_map = google_compute_url_map.app_urlmap.id
+  url_map = google_compute_url_map.https_redirect.id
 }
 
 resource "google_compute_global_forwarding_rule" "app_http" {
