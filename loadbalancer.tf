@@ -1,75 +1,3 @@
-resource "google_compute_health_check" "app_hc" {
-  name = "app-health-check"
-
-  http_health_check {
-    port = var.backend_port
-  }
-}
-
-resource "google_compute_backend_service" "app_backend" {
-  name          = "app-backend-service"
-  port_name     = "http"
-  protocol      = "HTTP"
-  health_checks = [google_compute_health_check.app_hc.id]
-
-  backend {
-    group = google_compute_instance_group.app_ig.self_link
-  }
-
-  iap {
-    enabled = true
-  }
-}
-
-# Least-privilege: grants access to just this one backend service, not the
-# whole project. Add more entries to var.app_allowed_members for teammates.
-resource "google_iap_web_backend_service_iam_member" "app_access" {
-  for_each = toset(var.app_allowed_members)
-
-  project             = var.gcp_project
-  web_backend_service = google_compute_backend_service.app_backend.name
-  role                = "roles/iap.httpsResourceAccessor"
-  member              = each.value
-}
-
-resource "google_compute_health_check" "grafana_hc" {
-  name = "grafana-health-check"
-
-  # Default path "/" redirects unauthenticated requests to /login (302),
-  # which GCP's health check treats as unhealthy even though Grafana is
-  # fine. /api/health is Grafana's dedicated no-auth endpoint for this.
-  http_health_check {
-    port         = 3001
-    request_path = "/api/health"
-  }
-}
-
-resource "google_compute_backend_service" "grafana_backend" {
-  name          = "grafana-backend-service"
-  port_name     = "grafana"
-  protocol      = "HTTP"
-  health_checks = [google_compute_health_check.grafana_hc.id]
-
-  backend {
-    group = google_compute_instance_group.app_ig.self_link
-  }
-
-  iap {
-    enabled = true
-  }
-}
-
-# Separate IAP grant, scoped to just the Grafana backend
-# Independent list (var.grafana_allowed_members) 
-resource "google_iap_web_backend_service_iam_member" "grafana_access" {
-  for_each = toset(var.grafana_allowed_members)
-
-  project             = var.gcp_project
-  web_backend_service = google_compute_backend_service.grafana_backend.name
-  role                = "roles/iap.httpsResourceAccessor"
-  member              = each.value
-}
-
 # Grafana routed by path
 # Requires Grafana's own config to know it's served from a subpath
 # (GF_SERVER_ROOT_URL including /grafana/, GF_SERVER_SERVE_FROM_SUB_PATH=true)
@@ -124,7 +52,7 @@ resource "google_compute_target_https_proxy" "app_https_proxy" {
 resource "google_compute_global_address" "app_ip" {
   name = "app-lb-ip"
 
-  # DNS ends up pointed at this IP once a real domain is in use - guard against a plain `terraform destroy`. 
+  # DNS ends up pointed at this IP once a real domain is in use - guard against a plain `terraform destroy`.
   # To actually remove this resource delete this lifecycle block first, then destroy
   lifecycle {
     prevent_destroy = true
@@ -143,7 +71,7 @@ resource "google_compute_url_map" "https_redirect" {
 
   default_url_redirect {
     https_redirect = true
-    host_redirect  = local.lb_domain  
+    host_redirect  = local.lb_domain
     strip_query    = false
   }
 }
