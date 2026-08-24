@@ -34,11 +34,14 @@ variable "terraform_deployer_sa" {
   # No default - required
 }
 
-variable "vm_runtime_sa" {
-  description = "Service account attached to the VM at runtime (least-privilege, separate from the deployer identity)"
-  type        = string
-  # No default - required,
-}
+# PENDING: uncomment once a project Owner grants terraform_deployer_sa
+# roles/iam.serviceAccountUser on this SA (see iam-grants-needed.txt) - until
+# then, attaching it to compute.tf's VM fails with a permission error.
+# variable "vm_runtime_sa" {
+#   description = "Service account attached to the VM at runtime (least-privilege, separate from the deployer identity)"
+#   type        = string
+#   # No default - required
+# }
 
 variable "domain_name" {
   description = "Domain pointed at the load balancer's IP for the managed SSL cert. If left as \"changeme.example.com\", falls back to a sslip.io-derived domain (see local.lb_domain in loadbalancer.tf) - set to a real, DNS-verified domain in terraform.tfvars once available."
@@ -61,6 +64,14 @@ variable "grafana_allowed_members" {
   description = "Identities granted roles/iap.httpsResourceAccessor on the Grafana backend service - independent from app_allowed_members, can be a narrower subset. Format: \"user:email\" or \"group:email\". No default - set in terraform.tfvars. Note: only accounts within your Google Workspace org can authenticate at all right now (the Google-managed OAuth client IAP defaults to is internal-only) - external accounts like personal Gmail need a custom OAuth client first, see conversation/devlog."
   type        = list(string)
 }
+
+# PENDING: uncomment alongside vm_runtime_sa above (see iam-grants-needed.txt) -
+# also needs a project Owner to grant *you* roles/iam.serviceAccountUser on
+# vm_runtime_sa, separately, so OS Login lets you SSH into a VM running as it.
+# variable "vm_ssh_allowed_members" {
+#   description = "Identities granted roles/iam.serviceAccountUser on vm_runtime_sa, so they're allowed to OS-Login SSH into the VM. Required because the VM runs as vm_runtime_sa - anyone who can SSH in can act with that SA's privileges via the metadata server, so GCP requires this explicit grant on top of the general compute.osLogin role. Format: \"user:email\" or \"group:email\". No default - set in terraform.tfvars."
+#   type        = list(string)
+# }
 
 variable "iap_forwarding_cidr" {
   description = "Google's fixed, globally-shared source range for Identity-Aware Proxy TCP forwarding. Same for every GCP project; do not change unless Google publishes a new range. https://cloud.google.com/iap/docs/using-tcp-forwarding#create-firewall-rule"
