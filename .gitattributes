@@ -1,0 +1,4 @@
+# Shell scripts must stay LF - they run on the VM (Debian) and under WSL,
+# where CRLF breaks the shebang line ("cannot execute: required file not
+# found"). This overrides core.autocrlf for these files specifically.
+*.sh text eol=lf
