@@ -10,12 +10,12 @@ set -e
 
 source "$(dirname "${BASH_SOURCE[0]}")/deploy-common.sh"
 
-# Local directory the compose files live in.
-COMPOSE_DIR="${COMPOSE_DIR:-./ragsha-app}"
+# Local directory the compose files live in. This is a git submodule.
+COMPOSE_DIR="${COMPOSE_DIR:-./ragsha-deploy}"
 
 # Artifact Registry location - must match registry.tf's location (var.region,
 # default asia-southeast1) and the ${REGION:-...} default baked into
-# ragsha-app/docker-compose.yml's image: fields.
+# ragsha-deploy/docker-compose.yml's image: fields.
 GCP_PROJECT="${GCP_PROJECT:-$PROJECT}"
 REGION="${REGION:-asia-southeast1}"
 REGISTRY_HOST="${REGION}-docker.pkg.dev"
@@ -50,42 +50,51 @@ else
   echo "==> 1/5 Skipping build/push (SKIP_BUILD set) - reusing images already in Artifact Registry"
 fi
 
-echo "==> 2/5 Copying project directory (compose files + everything they reference - configs, env files, etc.) to $VM_NAME:$REMOTE_DIR"
+echo "==> 2/5 Copying compose files + observability config + .env to $VM_NAME:$REMOTE_DIR"
 gcloud compute ssh "$VM_NAME" "${SSH_ARGS[@]}" --command="mkdir -p $REMOTE_DIR"
+
+# Explicit allowlist, not a glob over $COMPOSE_DIR - that directory is a git
+# submodule (source code, .git, .gitignore, .gitmodules, README, Jenkinsfile,
+# plus its own nested submodules) and none of that belongs on the VM. Only
+# sync what docker compose actually needs at runtime.
+SYNC_ITEMS=("${COMPOSE_FILES[@]}" "observability")
+[ -f "$COMPOSE_DIR/.env" ] && SYNC_ITEMS+=(".env")
+
+for item in "${SYNC_ITEMS[@]}"; do
+  if [ ! -e "$COMPOSE_DIR/$item" ]; then
+    echo "ERROR: $COMPOSE_DIR/$item not found."
+    exit 1
+  fi
+done
 
 # Remove stale remote copies of exactly what we're about to sync from local,
 # so a previous docker-auto-created wrong-type artifact (e.g. a directory
 # where observability/prometheus.yml, a file, belongs) gets fully replaced
 # instead of merged/colliding with it. `scp --recurse` won't do this itself -
 # it merges into existing directories rather than replacing them. Anything
-# NOT present locally (e.g. a data/ persistent volume) is left untouched.
+# NOT in SYNC_ITEMS (e.g. a data/ persistent volume) is left untouched.
 #
 # Each path is shell-quoted individually (printf %q) rather than joined by
 # naive string concatenation, so a name with a space or shell metacharacter
 # can't break the remote command. Falls back to a no-op ("true") instead of
 # a bare `rm -rf` if there's nothing to remove.
 REMOVE_LIST=()
-for entry in "$COMPOSE_DIR"/*; do
-  REMOVE_LIST+=("$REMOTE_DIR/$(basename "$entry")")
+for item in "${SYNC_ITEMS[@]}"; do
+  REMOVE_LIST+=("$REMOTE_DIR/$item")
 done
 
-REMOVE_CMD="true"
-if [ "${#REMOVE_LIST[@]}" -gt 0 ]; then
-  REMOVE_ARGS=""
-  for path in "${REMOVE_LIST[@]}"; do
-    REMOVE_ARGS+=" $(printf '%q' "$path")"
-  done
-  REMOVE_CMD="sudo rm -rf --$REMOVE_ARGS"
-fi
-
+REMOVE_ARGS=""
+for path in "${REMOVE_LIST[@]}"; do
+  REMOVE_ARGS+=" $(printf '%q' "$path")"
+done
 gcloud compute ssh "$VM_NAME" "${SSH_ARGS[@]}" \
-  --command="$REMOVE_CMD && sudo chown -R \$(whoami):\$(whoami) $REMOTE_DIR"
+  --command="sudo rm -rf --$REMOVE_ARGS && sudo chown -R \$(whoami):\$(whoami) $REMOTE_DIR"
 
-for entry in "$COMPOSE_DIR"/*; do
-  if [ -d "$entry" ]; then
-    gcloud compute scp --recurse "$entry" "$VM_NAME":"$REMOTE_DIR"/ "${SSH_ARGS[@]}"
+for item in "${SYNC_ITEMS[@]}"; do
+  if [ -d "$COMPOSE_DIR/$item" ]; then
+    gcloud compute scp --recurse "$COMPOSE_DIR/$item" "$VM_NAME":"$REMOTE_DIR"/ "${SSH_ARGS[@]}"
   else
-    gcloud compute scp "$entry" "$VM_NAME":"$REMOTE_DIR"/ "${SSH_ARGS[@]}"
+    gcloud compute scp "$COMPOSE_DIR/$item" "$VM_NAME":"$REMOTE_DIR"/ "${SSH_ARGS[@]}"
   fi
 done
 
