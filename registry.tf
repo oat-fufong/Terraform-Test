@@ -3,21 +3,6 @@ resource "google_project_service" "artifact_registry_api" {
   disable_on_destroy = false
 }
 
-# The VM runs under GCE's default compute SA (see compute.tf). Computed from
-# the project number rather than hardcoded - the email format is fixed and
-# predictable ("${project_number}-compute@developer..."). Uses google_project
-# (needs only resourcemanager.projects.get) instead of
-# google_compute_default_service_account, which needs iam.serviceAccounts.get
-# - a permission terraform_deployer_sa doesn't have (confirmed via a prior
-# apply error).
-data "google_project" "current" {
-  project_id = var.gcp_project
-}
-
-locals {
-  default_compute_sa = "${data.google_project.current.number}-compute@developer.gserviceaccount.com"
-}
-
 resource "google_artifact_registry_repository" "app_repo" {
   depends_on = [google_project_service.artifact_registry_api]
 
@@ -37,18 +22,13 @@ resource "google_artifact_registry_repository_iam_member" "deployer_push" {
   member     = "serviceAccount:${var.terraform_deployer_sa}"
 }
 
-# Pulls: the VM's identity (GCE default compute SA - see compute.tf for why
-# it's not a dedicated least-privilege SA). Still scoped to just this repo,
-# not project-wide, even though the SA itself is broader than ideal.
-#
-# PENDING (see iam-grants-needed.txt): once vm_runtime_sa can be attached to
-# the VM, swap this member to "serviceAccount:${var.vm_runtime_sa}" instead -
-# and at that point local.default_compute_sa/data.google_project.current
-# above are no longer needed either.
+# Pulls: the VM's identity (vm_runtime_sa, attached in compute.tf - a
+# dedicated least-privilege SA, separate from terraform_deployer_sa above).
+# Scoped to just this repo, not project-wide.
 resource "google_artifact_registry_repository_iam_member" "vm_pull" {
   project    = var.gcp_project
   location   = google_artifact_registry_repository.app_repo.location
   repository = google_artifact_registry_repository.app_repo.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:${local.default_compute_sa}"
+  member     = "serviceAccount:${var.vm_runtime_sa}"
 }
