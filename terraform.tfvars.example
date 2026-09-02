@@ -1,0 +1,35 @@
+# Copy this file to terraform.tfvars and fill in real values for your
+# deployment. 
+#
+# Every variable here is required - none have a default in variables.tf, so
+# terraform apply errors on anything left unset.
+
+gcp_project           = "<your-project-id>"
+region                = "asia-southeast1"
+zone                  = "asia-southeast1-a"
+app_name              = "app-name"
+machine_type          = "e2-medium"
+terraform_deployer_sa = "<deployer-sa-email>"
+vm_runtime_sa         = "<vm-runtime-sa-email>"
+
+# Falls back to a sslip.io-derived domain if left as "changeme.example.com" -
+# see local.lb_domain in loadbalancer.tf. 
+# Set to a real, DNS-verified domain once available.
+domain_name = "changeme.example.com"
+
+# Identities granted roles/iap.httpsResourceAccessor on the frontend/Grafana
+# backend services. Format: "user:email", "group:email", or "domain:example.com".
+app_allowed_members     = ["user:<your-email>"]
+grafana_allowed_members = ["user:<your-email>"]
+
+# Documentation only - not Terraform-managed (see compute.tf). Lists who
+# should manually be granted roles/iam.serviceAccountUser on vm_runtime_sa
+# so OS Login lets them SSH into the VM.
+vm_ssh_allowed_members = ["user:<your-email>"]
+
+# Port the app container listens on, that the load balancer forwards to.
+backend_port = 4321
+
+# Google's fixed IAP TCP forwarding source range - do not change unless
+# Google publishes a new one.
+iap_forwarding_cidr = "35.235.240.0/20"
