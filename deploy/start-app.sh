@@ -1,9 +1,7 @@
 #!/bin/bash
 
-# Starts the VM (if stopped) and brings the already-deployed stack back up,
-# without re-transferring anything
-
-# Use test-deploy.sh instead when you actually have new
+# Starts the VM (if stopped) and brings the stack back up without
+# re-transferring anything. Use test-deploy.sh instead if you have new
 # images/config to push.
 set -e
 
@@ -12,7 +10,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/deploy-common.sh"
 echo "==> 1/3 Starting the VM (no-op if it's already running)"
 gcloud compute instances start "$VM_NAME" \
   --zone="$ZONE" --project="$PROJECT" \
-  --impersonate-service-account=c0001-uat-terraform-deployer@c0001-uat.iam.gserviceaccount.com
+  --impersonate-service-account="$DEPLOYER_SA"
 
 echo "==> 2/3 Starting the stack via docker compose"
 # sshd may not be up yet right after `instances start` - retry briefly.

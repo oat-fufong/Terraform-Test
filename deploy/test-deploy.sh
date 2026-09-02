@@ -1,28 +1,13 @@
 #!/bin/bash
 
-# Builds images, pushes them to Artifact Registry, syncs compose files +
-# configs to the VM, then (re)starts the stack via docker compose pulling
-# those images by reference. Replaces the old tar/scp/docker-load flow.
+# Builds images, pushes them to Artifact Registry, syncs compose files to the
+# VM, then (re)starts the stack via docker compose pulling those images by
+# reference.
 #
-# Run this from the repo root (e.g. `./deploy/test-deploy.sh`) - COMPOSE_DIR
-# below defaults to a path relative to your current directory.
+# Run from the repo root: ./deploy/test-deploy.sh
 set -e
 
 source "$(dirname "${BASH_SOURCE[0]}")/deploy-common.sh"
-
-# Local directory the compose files live in. This is a git submodule.
-COMPOSE_DIR="${COMPOSE_DIR:-./ragsha-deploy}"
-
-# Artifact Registry location - must match registry.tf's location (var.region,
-# default asia-southeast1) and the ${REGION:-...} default baked into
-# ragsha-deploy/docker-compose.yml's image: fields.
-GCP_PROJECT="${GCP_PROJECT:-$PROJECT}"
-REGION="${REGION:-asia-southeast1}"
-REGISTRY_HOST="${REGION}-docker.pkg.dev"
-
-# Identity that has roles/artifactregistry.writer on the repo (see
-# registry.tf) - same deployer SA Terraform itself impersonates (main.tf).
-DEPLOYER_SA="${DEPLOYER_SA:-c0001-uat-terraform-deployer@c0001-uat.iam.gserviceaccount.com}"
 
 for f in "${COMPOSE_FILES[@]}"; do
   if [ ! -f "$COMPOSE_DIR/$f" ]; then
