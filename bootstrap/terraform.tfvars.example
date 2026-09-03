@@ -1,0 +1,2 @@
+gcp_project           = "<your-project-id>"
+terraform_deployer_sa = "<deployer-sa-email>"
